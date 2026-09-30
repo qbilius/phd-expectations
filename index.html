@@ -1,0 +1,569 @@
+<!doctype html>
+<html><head><meta charset='utf-8'>
+<meta name='viewport' content='width=device-width, initial-scale=1, viewport-fit=cover'>
+<title>Alignment of expectations</title>
+<style>
+:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html{scroll-padding-top:env(safe-area-inset-top,0px);background:#fff}
+body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;font-size:14px;line-height:1.4;color:#111;background:#fff;max-width:1000px;margin:auto;padding:0 32px 48px}
+a{color:#1a56b0}
+h1{font-size:22px;margin:18px 0 8px}
+.bar{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid #eee}
+.bar .right{display:flex;gap:8px;align-items:center}
+button{font:inherit;cursor:pointer}
+#msg{font-size:12px;color:#666}
+.intro{font-size:13px;color:#333;margin-bottom:6px}
+.intro ol{margin:6px 0;padding-left:20px}
+.intro p{margin:6px 0}
+.fields{display:flex;gap:20px;align-items:baseline;margin:16px 0 8px}
+.f{display:flex;align-items:baseline;gap:6px;white-space:nowrap}
+.f.name{flex:1}
+.f.date{flex:0 0 140px}
+.f [contenteditable]{flex:1;min-width:0;border-bottom:1px solid #333;min-height:1.4em;padding:0 2px;white-space:normal}
+.sheet{overflow-x:auto;margin:0 -26px}
+.list{min-width:760px;position:relative;padding:0 26px}
+.row{display:grid;grid-template-columns:1fr 128px 1fr 0.8fr;column-gap:10px;align-items:center;padding:8px 0;position:relative}
+.row::after{content:'';position:absolute;bottom:0;left:0;right:0;border-bottom:1px solid #ececec}
+.row.h{padding:26px 0 4px}
+.row.h .handle,.row.h .x{top:28px}
+.row.q .handle,.row.q .x{top:50%;transform:translateY(-50%)}
+.row.h::after{display:none}
+.row.h h2{grid-column:1/-1;margin:0;font-size:17px}
+.row.lab{font-size:12px;color:#666;font-weight:600;padding:4px 0}
+.row.lab::after{border-bottom-color:#999}
+.row.lab .l0,.row.q .a{text-align:right}
+.row.lab .sc{text-align:center}
+.row.o .qt{grid-column:1/-1;grid-row:1}
+.row.o .ans{grid-column:1/-1;grid-row:2;min-height:3.6em;margin-top:4px}
+.num{color:#888;font-size:12px;text-align:right}
+.scale{display:flex;justify-content:space-between;padding:0 4px}
+.oc{flex:0 0 auto;box-sizing:border-box;width:16px;height:16px;border:1.5px solid #333;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.oc.on::after{content:'';width:8px;height:8px;border-radius:50%;background:#111}
+.cm,.ans{white-space:pre-wrap;font-size:13px;font-style:italic}
+.cm{grid-column:4;grid-row:1;align-self:stretch;min-height:1.4em}
+.cm:empty::before{content:attr(data-ph);color:#aaa}
+.stamp{display:none;font-size:9pt;color:#555;margin-top:28px}
+.keep{break-inside:avoid;page-break-inside:avoid}
+.tog{font-size:13px;margin-left:8px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;user-select:none}
+.tog input{appearance:none;-webkit-appearance:none;width:30px;height:17px;border-radius:9px;background:#ccc;position:relative;cursor:pointer;margin:0;transition:background .15s}
+.tog input::after{content:'';position:absolute;top:2px;left:2px;width:13px;height:13px;border-radius:50%;background:#fff;transition:left .15s}
+.tog input:checked{background:#111}
+.tog input:checked::after{left:15px}
+.tog input:focus-visible{outline:2px solid #1a56b0;outline-offset:2px}
+.bar button{background:#111;color:#fff;border:1px solid #111;border-radius:5px;padding:5px 12px;font-size:13px}
+.bar button:hover{background:#333}
+.bar button:focus-visible{outline:2px solid #1a56b0;outline-offset:2px}
+.handle,.x{position:absolute;top:8px;width:26px;text-align:center}
+.handle{left:-26px;cursor:grab;color:#bbb;touch-action:none;user-select:none;text-align:center;font-size:13px;letter-spacing:-2px}
+.x{right:-26px;border:none;background:none;color:#aaa;font-size:16px;padding:0;visibility:hidden}
+.row:hover .x{visibility:visible}
+.x:hover{color:#c00}
+@media (hover:none){.x{visibility:visible}}
+[contenteditable]{outline:none;cursor:text}
+[contenteditable]:focus{background:transparent}
+[contenteditable]{position:relative;min-height:1.2em}
+[contenteditable]:empty::before{content:attr(data-ph);color:#aaa;position:absolute;left:0;right:0;top:0;pointer-events:none;text-align:inherit}
+.addrow{padding:6px 0 0 0;font-size:13px;color:#999}
+.addrow span{cursor:pointer;margin-right:16px}
+.addrow span:hover{color:#111}
+.src{font-size:13px;color:#333;font-style:italic;margin:18px 0 36px}
+.item.dragging{opacity:.35}
+#ind{position:absolute;left:26px;right:26px;height:2px;background:#1a56b0;display:none;pointer-events:none}
+@media print{
+  @page{size:A4;margin:12mm 12mm 16mm;@bottom-center{content:'Page ' counter(page) ' of ' counter(pages);font:9pt system-ui,sans-serif;color:#555}}
+  body{font-size:10pt;max-width:none;padding:0}
+  .no-print{display:none!important}
+  .stamp{display:block}
+  .sheet{margin:0;overflow:visible}
+  .list{min-width:0;padding:0}
+  .row{grid-template-columns:1fr 110px 1fr;break-inside:avoid}
+  .row.h,.row.lab{break-after:avoid}
+  [contenteditable]:empty::before{content:''}
+  .row.lab .cmh{display:none}
+  .cm{grid-column:1/-1;grid-row:2;text-align:center;font-style:italic;margin-top:4px}
+  body.space .cm:empty{min-height:2.4em}
+  body.space .cm:empty::before{content:attr(data-ph);color:#999}
+  body:not(.space) .cm:empty{display:none}
+  a{color:#111}
+}
+</style></head><body>
+<div class='bar no-print'>
+  <div><button id='resetR'>Reset responses</button> <span id='msg'></span></div>
+  <div class='right'><button id='dl' title='Save this page, including your edits and responses, as a single HTML file'>Download</button><button onclick='window.print()'>Print</button><label class='tog'><input type='checkbox' id='space'> Leave space for comments when printing</label></div>
+</div>
+
+<h1 contenteditable data-g='title' data-ph='Title'></h1>
+
+<div class='intro ml' id='intro' contenteditable></div>
+<p class='src'>Adapted from the <a href='https://healthsciences.ku.dk/phd/supervision/documents/Expectation_alignment_between_supervisor_and_PhD_student_-_Discussion_sheet.pdf' target='_blank' rel='noopener'>Alignment of expectations sheet</a> of the Graduate School of Health and Medical Sciences, University of Copenhagen.</p>
+<p class='src' id='updated' style='margin-top:-28px'>Last updated: {{LAST_UPDATED}}</p>
+
+<div class='fields'>
+  <div class='f name'>Supervisor: <span contenteditable data-g='supervisor'></span></div>
+  <div class='f name'>PhD student: <span contenteditable data-g='student'></span></div>
+  <div class='f date'>Date: <span contenteditable data-g='date'></span></div>
+</div>
+
+<div class='sheet'><div class='list' id='list'></div></div>
+<p class='stamp' id='stamp'></p>
+
+<!-- ============================================================
+     DEFAULT FORM CONTENT
+     Edit the title, intro, sections, and questions here.
+     <section left='...' right='...'>  column labels for the scale
+     <statement hint='...'>            optional hint shown in the comment field
+       <left>...</left> <right>...</right>
+     <open>...</open>                  open-ended question
+     Filled-in copies (from Download) also store responses here:
+     <responses ...>, and value/comment/answer attributes.
+     ============================================================ -->
+<template id='default'>
+  <h1>Alignment of expectations between supervisor and PhD student</h1>
+
+  <div class='intro'>
+    <p>Agreeing early on what the supervisor and the PhD student expect from each other makes the collaboration easier. This form is meant to structure that conversation.</p>
+    <ol>
+      <li>Set up a meeting between the supervisor and the PhD student.</li>
+      <li>Before the meeting, each of you fills in your own copy.</li>
+      <li>At the meeting, go through the sheet together and fill in one joint copy. Discuss where your answers differ, agree on a position that suits your project, and optionally write a comment you both accept.</li>
+      <li>Print the joint version to PDF and email it to each of you (or print two copies). Use Download to save it as a file you can open and update whenever needed.</li>
+    </ol>
+    <p>Skip any question that does not apply to you.</p>
+  </div>
+
+  <section left='Supervisor' right='PhD student'>
+    <h2>Research</h2>
+    <statement>
+      <left>The supervisor sets the scientific direction of the project</left>
+      <right>The PhD student shapes the scientific direction of the project</right>
+    </statement>
+    <statement>
+      <left>The supervisor plans the goals, milestones, and next steps</left>
+      <right>The PhD student plans the goals, milestones, and next steps</right>
+    </statement>
+    <statement>
+      <left>The supervisor sets how the lab notebook and research data are organized (e.g., folder structure, file naming, and metadata)</left>
+      <right>The PhD student organizes their lab notebook and data as they see fit</right>
+    </statement>
+    <statement>
+      <left>The supervisor makes sure research data is backed up and never lost</left>
+      <right>The PhD student is responsible for backing up their data and making sure it is never lost</right>
+    </statement>
+  </section>
+
+  <section left='Stricter' right='More flexible'>
+    <h2>Research integrity</h2>
+    <statement>
+      <left>Text should be written without AI tools</left>
+      <right>Using AI tools for writing and editing text is encouraged</right>
+    </statement>
+    <statement>
+      <left>Code and analyses should be done without AI tools</left>
+      <right>Using AI tools for coding and data analysis is encouraged</right>
+    </statement>
+    <statement>
+      <left>Literature should be found without AI tools</left>
+      <right>Using AI tools to find relevant literature is encouraged</right>
+    </statement>
+    <statement>
+      <left>The PhD student is expected to read relevant papers in full</left>
+      <right>AI summaries are enough to get the main points of a paper</right>
+    </statement>
+    <statement>
+      <left>Every analysis should be fully reproducible (e.g., documented code, versioned data, and detailed protocols)</left>
+      <right>Reasonable documentation is enough, and full reproducibility is not a priority</right>
+    </statement>
+  </section>
+
+  <section left='Supervisor' right='PhD student'>
+    <h2>Presenting and publishing</h2>
+    <statement>
+      <left>Important presentations (e.g., conference talks, posters, and progress reviews) should be rehearsed with the supervisor</left>
+      <right>The PhD student can give important presentations without prior feedback from the supervisor</right>
+    </statement>
+    <statement>
+      <left>Minor presentations (e.g., lab meetings and journal clubs) should also be checked by the supervisor</left>
+      <right>The PhD student prepares minor presentations independently</right>
+    </statement>
+    <statement>
+      <left>Work on posters, papers, and the thesis should start as early as possible</left>
+      <right>The PhD student decides when to start working on posters, papers, and the thesis</right>
+    </statement>
+    <statement hint='How quickly should feedback on drafts be returned?'>
+      <left>The supervisor reviews every thesis chapter before submission</left>
+      <right>The thesis can be submitted without the supervisor reviewing every chapter</right>
+    </statement>
+    <statement hint='When can the PhD student expect to be first author?'>
+      <left>The supervisor decides authorship and author order on papers</left>
+      <right>Authorship and author order are agreed together at the start of each project</right>
+    </statement>
+    <statement>
+      <left>The supervisor edits manuscripts and gives extensive feedback</left>
+      <right>The PhD student writes manuscripts and prepares figures largely on their own, with light feedback from the supervisor</right>
+    </statement>
+  </section>
+
+  <section left='Supervisor' right='PhD student'>
+    <h2>PhD process</h2>
+    <statement hint='How often and for how long should you meet to begin with?'>
+      <left>The supervisor initiates regular meetings and checks that the PhD student is on track</left>
+      <right>The PhD student asks for meetings when needed and does not need to report progress otherwise</right>
+    </statement>
+    <statement>
+      <left>The supervisor keeps track of program requirements and deadlines, including finishing the thesis on time</left>
+      <right>The PhD student keeps track of program requirements and meets all deadlines</right>
+    </statement>
+    <statement>
+      <left>Presenting at international conferences is an expected part of the PhD</left>
+      <right>Conference attendance is optional and decided case by case</right>
+    </statement>
+    <statement>
+      <left>A research stay or internship abroad is an expected part of the PhD</left>
+      <right>A stay abroad is optional and up to the PhD student</right>
+    </statement>
+    <statement>
+      <left>The supervisor should help build a national and international network, including suggesting PhD committee members</left>
+      <right>Building a network, including finding PhD committee members, is up to the PhD student</right>
+    </statement>
+    <statement>
+      <left>The supervisor actively helps plan the career after the PhD and points out opportunities</left>
+      <right>Career planning and finding opportunities are up to the PhD student</right>
+    </statement>
+  </section>
+
+  <section left='Supervisor' right='PhD student'>
+    <h2>Working relationship</h2>
+    <statement>
+      <left>When something in the working relationship is not working, the supervisor is expected to bring it up</left>
+      <right>When something in the working relationship is not working, the PhD student is expected to bring it up</right>
+    </statement>
+    <statement>
+      <left>The supervisor should be reachable whenever help is needed, also outside working hours</left>
+      <right>The PhD student should book a meeting when help is needed</right>
+    </statement>
+    <statement>
+      <left>The supervisor should also offer support with personal problems during the PhD</left>
+      <right>The supervisor should only help with matters directly related to the research</right>
+    </statement>
+    <statement>
+      <left>The supervisor sets expectations for working hours and presence in the lab</left>
+      <right>The PhD student decides their own working hours and when to work from home</right>
+    </statement>
+    <statement>
+      <left>The supervisor may expect work outside normal hours during busy periods</left>
+      <right>Work outside normal hours should not be expected</right>
+    </statement>
+  </section>
+
+  <section>
+    <h2>Open questions</h2>
+    <open>What matters most to each of you in this PhD (e.g., doing rigorous research, publishing papers, finishing the thesis on time, developing as an independent researcher)?</open>
+    <open>What should be achieved in the first 3 months?</open>
+    <open>What does the PhD student aim for after the PhD?</open>
+    <open>Extra comments</open>
+  </section>
+</template>
+
+<!-- ============================================================
+     APP LOGIC (no content below this line)
+     ============================================================ -->
+<script>
+const L = ['Supervisor', 'PhD student'];
+const h = (text, l = L) => ({t: 'h', text, l: [...l]});
+const q = (a, b) => ({t: 'q', a, b, v: 0, c: ''});
+const o = text => ({t: 'o', text, ans: ''});
+
+const txt = el => (el ? el.textContent : '').trim().replace(/\s+/g, ' ');
+function makeDefault() {
+  const t = document.getElementById('default').content;
+  const items = [];
+  t.querySelectorAll('section').forEach(sec => {
+    items.push(h(txt(sec.querySelector('h2')), [sec.getAttribute('left') ?? L[0], sec.getAttribute('right') ?? L[1]]));
+    sec.querySelectorAll('statement, open').forEach(el => {
+      if (el.tagName === 'STATEMENT') items.push({...q(txt(el.querySelector('left')), txt(el.querySelector('right'))),
+        hint: el.getAttribute('hint') || '', v: +el.getAttribute('value') || 0, c: el.getAttribute('comment') || ''});
+      else items.push({...o(txt(el)), ans: el.getAttribute('answer') || ''});
+    });
+  });
+  const rs = t.querySelector('responses');
+  const ra = k => (rs && rs.getAttribute(k)) || '';
+  return {
+    title: txt(t.querySelector('h1')),
+    intro: t.querySelector('.intro').innerHTML.trim(),
+    supervisor: ra('supervisor'), student: ra('student'), date: ra('date'),
+    commentSpace: ra('comment-space') !== 'off',
+    items
+  };
+}
+
+const SNAPSHOT = '<!doctype html>\n' + document.documentElement.outerHTML;
+const TPL_HASH = (s => { let h = 5381; for (const c of s) h = (h * 33 + c.charCodeAt(0)) >>> 0; return h.toString(36); })(document.getElementById('default').innerHTML);
+const KEY = 'questionnaire-' + TPL_HASH;
+
+const upd = document.getElementById('updated');
+if (upd.textContent.includes('{{')) upd.remove();
+
+const list = document.getElementById('list');
+const msg = document.getElementById('msg');
+const esc = s => String(s ?? '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
+const store = {
+  get: () => { try { return JSON.parse(localStorage.getItem(KEY)); } catch { return null; } },
+  set: () => { try { localStorage.setItem(KEY, JSON.stringify(data)); } catch {} updateFp(); }
+};
+let data = store.get() || makeDefault();
+
+const intro = document.getElementById('intro');
+const ALLOWED = new Set(['P', 'OL', 'UL', 'LI', 'BR', 'B', 'STRONG', 'I', 'EM', 'DIV']);
+function clean(html) {
+  const t = document.createElement('template');
+  t.innerHTML = html || '';
+  (function walk(node) {
+    [...node.childNodes].forEach(c => {
+      if (c.nodeType === 1) {
+        walk(c);
+        if (!ALLOWED.has(c.tagName)) c.replaceWith(...c.childNodes);
+        else [...c.attributes].forEach(at => c.removeAttribute(at.name));
+      } else if (c.nodeType !== 3) c.remove();
+    });
+  })(t.content);
+  return t.innerHTML;
+}
+
+const ce = (i, f, text, ph, cls = '') => `<div class='${cls}' contenteditable data-i='${i}' data-f='${f}' data-ph='${esc(ph)}'>${esc(text)}</div>`;
+const X = i => `<button class='x no-print' data-a='del' data-i='${i}' title='Delete'>×</button>`;
+const HANDLE = `<span class='handle no-print' title='Drag to move'>⋮⋮</span>`;
+const addRow = p => `<div class='addrow no-print'><span data-a='addq' data-p='${p}'>+ Statement</span><span data-a='addo' data-p='${p}'>+ Open question</span><span data-a='addh' data-p='${p}'>+ Section</span></div>`;
+
+function blockHasQ(i) {
+  for (let j = i + 1; j < data.items.length && data.items[j].t !== 'h'; j++) if (data.items[j].t === 'q') return true;
+  return false;
+}
+
+const spaceBox = document.getElementById('space');
+const isFilled = () => data.items.some(it => it.t === 'q' && it.v);
+function updateSpace() {
+  if (data.commentSpace === undefined) data.commentSpace = true;
+  spaceBox.checked = data.commentSpace;
+  document.body.classList.toggle('space', data.commentSpace);
+}
+spaceBox.onchange = () => { data.commentSpace = spaceBox.checked; updateSpace(); store.set(); };
+
+function render() {
+  updateSpace();
+  document.querySelectorAll('[data-g]').forEach(e => { e.textContent = data[e.dataset.g] || ''; });
+  intro.innerHTML = clean(data.intro);
+  let html = '', n = 0, keep = false;
+  const close = () => { if (keep) { html += '</div>'; keep = false; } };
+  data.items.forEach((it, i) => {
+    if (it.t === 'h') {
+      close();
+      if (i > 0) html += addRow(i);
+      html += `<div class='keep'>`;
+      keep = 'head';
+      n = 0;
+      html += `<div class='row h item' data-i='${i}'>${HANDLE}<h2 contenteditable data-i='${i}' data-f='text' data-ph='Section title'>${esc(it.text)}</h2>${X(i)}</div>`;
+      if (blockHasQ(i)) html += `<div class='row lab'>${ce(i, 'l0', it.l[0], '', 'l0')}<span class='sc'>Scale</span>${ce(i, 'l1', it.l[1], '')}<span class='cmh'>Comment</span></div>`;
+      return;
+    }
+    if (it.t === 'q') {
+      n++;
+      const dots = [1, 2, 3, 4, 5].map(v => `<span class='oc${it.v === v ? ' on' : ''}' data-a='v' data-i='${i}' data-v='${v}'></span>`).join('');
+      html += `<div class='row q item' data-i='${i}'>${HANDLE}${ce(i, 'a', it.a, 'Statement', 'a')}<div class='scale'>${dots}</div>${ce(i, 'b', it.b, 'Opposite statement')}${ce(i, 'c', it.c, it.hint || '', 'cm ml')}${X(i)}</div>`;
+    } else {
+      n++;
+      html += `<div class='row o item' data-i='${i}'>${HANDLE}${ce(i, 'text', it.text, 'Question', 'qt')}${X(i)}${ce(i, 'ans', it.ans, '', 'ans ml')}</div>`;
+    }
+    close();
+  });
+  close();
+  html += addRow(data.items.length);
+  list.innerHTML = html + `<div id='ind'></div>`;
+}
+
+const focusField = (i, f) => { const e = list.querySelector(`[data-i='${i}'][data-f='${f}']`); if (e) e.focus(); };
+
+document.addEventListener('input', e => {
+  const t = e.target;
+  if (t === intro) data.intro = clean(intro.innerHTML);
+  else if (t.dataset.g) data[t.dataset.g] = t.innerText.trim();
+  else if (t.dataset.f) {
+    const it = data.items[+t.dataset.i], f = t.dataset.f;
+    const v = t.classList.contains('ml') ? t.innerText : t.innerText.replace(/\s+/g, ' ');
+    if (f === 'c' && !v.trim()) { t.innerHTML = ''; it.c = ''; store.set(); return; }
+    if (f === 'l0') it.l[0] = v; else if (f === 'l1') it.l[1] = v; else it[f] = v;
+  } else return;
+  store.set();
+});
+
+document.addEventListener('paste', e => {
+  if (!e.target.isContentEditable) return;
+  e.preventDefault();
+  let t = e.clipboardData.getData('text/plain');
+  if (!e.target.classList.contains('ml')) t = t.replace(/\s+/g, ' ');
+  document.execCommand('insertText', false, t);
+});
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && e.target.isContentEditable && !e.target.classList.contains('ml')) { e.preventDefault(); e.target.blur(); }
+});
+
+document.addEventListener('click', e => {
+  const a = e.target.closest('[data-a]');
+  if (!a) return;
+  const i = +a.dataset.i, p = +a.dataset.p;
+  if (a.dataset.a === 'v') {
+    const it = data.items[i], v = +a.dataset.v, was = isFilled();
+    it.v = it.v === v ? 0 : v;
+    a.parentElement.querySelectorAll('.oc').forEach(d => d.classList.toggle('on', +d.dataset.v === it.v));
+    if (!was && it.v) { data.commentSpace = false; updateSpace(); }
+    store.set();
+    return;
+  }
+  if (a.dataset.a === 'del') data.items.splice(i, 1);
+  else if (a.dataset.a === 'addq') data.items.splice(p, 0, q('', ''));
+  else if (a.dataset.a === 'addo') data.items.splice(p, 0, o(''));
+  else if (a.dataset.a === 'addh') data.items.splice(p, 0, h(''));
+  store.set(); render();
+  if (a.dataset.a === 'addq') focusField(p, 'a');
+  if (a.dataset.a === 'addo' || a.dataset.a === 'addh') focusField(p, 'text');
+});
+
+document.getElementById('resetR').onclick = () => {
+  data.supervisor = data.student = data.date = '';
+  data.commentSpace = true;
+  data.items.forEach(it => { if (it.t === 'q') { it.v = 0; it.c = ''; } else if (it.t === 'o') it.ans = ''; });
+  store.set(); render();
+  msg.textContent = 'Responses cleared.';
+};
+
+// drag and drop (pointer based, works with touch)
+let drag = null;
+list.addEventListener('pointerdown', e => {
+  const hd = e.target.closest('.handle');
+  if (!hd) return;
+  e.preventDefault();
+  const el = hd.closest('.item');
+  drag = {from: +el.dataset.i, el, to: null};
+  el.classList.add('dragging');
+  hd.setPointerCapture(e.pointerId);
+  onMove(e);
+});
+
+function onMove(e) {
+  if (!drag) return;
+  const ind = document.getElementById('ind');
+  const els = [...list.querySelectorAll('.item')];
+  let to = data.items.length, top = null;
+  for (const el of els) {
+    const r = el.getBoundingClientRect();
+    if (e.clientY < r.top + r.height / 2) { to = +el.dataset.i; top = el.offsetTop; break; }
+  }
+  const ref = els.find(el => +el.dataset.i === to);
+  if (ref && ref.classList.contains('h') && to > 0) {
+    const prev = els[els.indexOf(ref) - 1];
+    if (prev) top = prev.offsetTop + prev.offsetHeight;
+  }
+  if (top === null) { const last = els[els.length - 1]; top = last ? last.offsetTop + last.offsetHeight : 0; }
+  drag.to = to;
+  ind.style.top = (top - 1) + 'px';
+  ind.style.display = 'block';
+  if (e.clientY < 50) window.scrollBy(0, -12);
+  else if (e.clientY > window.innerHeight - 50) window.scrollBy(0, 12);
+}
+
+function onEnd(apply) {
+  if (!drag) return;
+  const {from, to} = drag;
+  drag = null;
+  if (apply && to !== null && to !== from && to !== from + 1) {
+    const [it] = data.items.splice(from, 1);
+    data.items.splice(to > from ? to - 1 : to, 0, it);
+    store.set();
+  }
+  render();
+}
+document.addEventListener('pointermove', onMove);
+document.addEventListener('pointerup', () => onEnd(true));
+document.addEventListener('pointercancel', () => onEnd(false));
+
+// save / load
+let downloads = null;
+if (window.claude && window.claude.use) window.claude.use('downloads').then(d => { downloads = d; });
+
+async function save(filename, text, type) {
+  msg.textContent = '';
+  if (downloads) {
+    try { await downloads.save({filename, data: text}); }
+    catch (e) { if (e.code !== 'declined') msg.textContent = 'Download failed: ' + e.message; }
+    return;
+  }
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([text], {type}));
+  a.download = filename;
+  a.click();
+}
+
+
+function templateMarkup(d) {
+  let out = `\n  <h1>${esc(d.title)}</h1>\n\n  <div class='intro'>\n    ${(d.intro || '').trim()}\n  </div>\n`;
+  if (hasResponses(d) || !d.commentSpace)
+    out += `\n  <responses supervisor='${esc(d.supervisor)}' student='${esc(d.student)}' date='${esc(d.date)}' comment-space='${d.commentSpace ? 'on' : 'off'}'></responses>\n`;
+  let open = false;
+  const hasQ = i => { for (let j = i + 1; j < d.items.length && d.items[j].t !== 'h'; j++) if (d.items[j].t === 'q') return true; return false; };
+  d.items.forEach((it, i) => {
+    if (it.t === 'h' || !open) {
+      if (open) out += '  </section>\n';
+      open = true;
+      if (it.t === 'h') {
+        const attrs = hasQ(i) ? ` left='${esc(it.l[0])}' right='${esc(it.l[1])}'` : '';
+        out += `\n  <section${attrs}>\n    <h2>${esc(it.text)}</h2>\n`;
+        return;
+      }
+      out += `\n  <section>\n`;
+    }
+    if (it.t === 'q') {
+      const at = (it.hint ? ` hint='${esc(it.hint)}'` : '') + (it.v ? ` value='${it.v}'` : '') + (it.c ? ` comment='${esc(it.c)}'` : '');
+      out += `    <statement${at}>\n      <left>${esc(it.a)}</left>\n      <right>${esc(it.b)}</right>\n    </statement>\n`;
+    } else out += `    <open${it.ans ? ` answer='${esc(it.ans)}'` : ''}>${esc(it.text)}</open>\n`;
+  });
+  if (open) out += '  </section>\n';
+  return out;
+}
+
+const TPL_RE = /(<template id=["']default["']>)[\s\S]*?(<\/template>)/;
+const hasResponses = d => !!(d.supervisor || d.student || d.date || d.items.some(it => it.v || it.c || it.ans));
+const slug = s => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+
+document.getElementById('dl').onclick = async () => {
+  let src = null;
+  try {
+    const res = await fetch(location.href, {cache: 'no-store'});
+    if (res.ok) { const t = await res.text(); if (TPL_RE.test(t)) src = t; }
+  } catch {}
+  if (!src) src = SNAPSHOT;
+  src = src.replace(/(id=["']updated["'][^>]*>Last updated: )[^<]*/, '$1{{LAST_UPDATED}}');
+  const tpl = templateMarkup(data);
+  const name = hasResponses(data) ? ['expectations', slug(data.student), slug(data.date)].filter(Boolean).join('-') + '.html' : 'index.html';
+  save(name, src.replace(TPL_RE, (m, a, b) => a + tpl + b), 'text/html');
+};
+
+// print timestamp and content fingerprint
+let fp = '';
+async function updateFp() {
+  const {title, intro, supervisor, student, date, items} = data;
+  const text = JSON.stringify({title, intro, supervisor, student, date, items});
+  try {
+    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+    fp = [...new Uint8Array(buf)].map(x => x.toString(16).padStart(2, '0')).join('');
+  } catch { fp = ''; }
+}
+window.addEventListener('beforeprint', () => {
+  const d = new Date();
+  const when = d.toLocaleDateString('en-US', {year: 'numeric', month: 'long', day: 'numeric'}) + ' at ' + d.toLocaleTimeString('en-US', {hour: '2-digit', minute: '2-digit'});
+  document.getElementById('stamp').textContent = `Printed on ${when}.` + (fp ? ` Content fingerprint (SHA-256): ${fp.slice(0, 16).match(/.{4}/g).join(' ')}` : '');
+});
+
+updateFp();
+render();
+</script>
+</body></html>
